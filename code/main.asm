@@ -25,12 +25,13 @@ Start:
  	movwf		TRISA			; TRISA = B'11110000'(RA0,RA1,RA2,RA3 como saída)
  	
  	bsf		STATUS,RP1		; Mudar para o bank3 11
- 	clrf		ANCEL			; Configura os pinos da PORTA 
+ 	clrf		ANSEL			; Configura os pinos da PORTA 
  						; como entrada digital
  	
 ;--- ----
 Main:
 	call		Rotinainicializacao
+	goto		Main
 	
 ;--- ----	
 Rotinainicializacao:
@@ -39,7 +40,7 @@ Rotinainicializacao:
 	bcf		STATUS,RP1		; Muda para o bank0 00
 	movlw		0x0F			; W = B'0000 1111 '
 	movwf		PORTA			; LEDs iniciam ligados		
-	call		delay_1s		; Chama a função de delay
+	call		Delay_1s		; Chama a função de delay
 	clrf		led_cnt		; led_cnt == 0
 
 
@@ -73,9 +74,19 @@ LedContLoop:
 	movlw		.4
 	subwf		led_cnt, W		
 	btfss		STATUS, Z		; led_cnt = 4 ?
-	goto		LedContLoop:	; Não, volta ao inicio da rotina
+	goto		LedContLoop	; Não, volta ao inicio da rotina
 	clrf		PORTA			; Sim, apaga todos os LEDs
 	return
 	
+Delay_1s:
+
+	nop
+	return
 	
-Delay	
+Delay_200ms:
+
+	nop
+	return
+	
+	
+end	
