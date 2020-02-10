@@ -1,4 +1,4 @@
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  1
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -14,116 +14,244 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00007 ;==========================================================================
                       00008 
                       00809         LIST
+                      00002 #define button PORTB, RB0
 Warning[205]: Found directive in column 1. (list)
-                      00002 list p=16f887
-                      00003 
-                      00004         cblock 0x20
-  00000020            00005                 led_cnt
-  00000021            00006                 cnt_1
-  00000022            00007                 cnt_2
-                      00008         endc
-                      00009 
-0000                  00010         org             0x00    ; reset vector
-0000   2805           00011         goto    Start
-                      00012         
-0004                  00013         org             0x04    ;interrupt vector
-0004   0009           00014         retfie
-                      00015         
-0005                  00016 Start:
-                      00017         ;----- I/O config ------
-0005   1683           00018         bsf     STATUS, RP0     ; change to bank1
-0006   30F0           00019         movlw   B'11110000'
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0007   0085           00020         movwf   TRISA           ; config RA0-R3 as ouput
-                      00021                                                 ; and RA4-RA7 as input
-0008   1703           00022         bsf     STATUS, RP1     ; change to bank3
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0009   0188           00023         clrf    ANSEL           ; configure all PORTA,
-                      00024                                                 ; pins as digital I/O
-000A                  00025 Main:
-000A   200C           00026         call    RotinaInicializacao
-000B   280A           00027         goto    Main
+                      00003 list p=16f887
+Warning[205]: Found directive in column 1. (__CONFIG)
+2007   2FF4           00004 __CONFIG _CONFIG1, 0x2FF4
+Warning[205]: Found directive in column 1. (__CONFIG)
+2008   3FFF           00005 __CONFIG _CONFIG2, 0x3FFF
+                      00006         cblock 0x20
+  00000020            00007                 led_cnt
+  00000021            00008                 cnt_1
+  00000022            00009                 cnt_2
+  00000023            00010                 _wreg
+  00000024            00011                 _status
+  00000025            00012                 timer_counter_5s
+  00000026            00013                 timer_counter_50ms
+  00000027            00014                 level ; level:
+                      00015                         ; 0 = Dificil
+                      00016                         ; 1 = Facil
+  00000028            00017                 sequency
+  00000029            00018                 move
+                      00019                 
+                      00020         endc
+                      00021         
+Warning[207]: Found label after column 1. (TMR0_50ms)
+  0000003D            00022         TMR0_50ms       EQU     .61             ; Constante Literal
+Warning[207]: Found label after column 1. (LED_RED)
+  00000001            00023         LED_RED EQU     B'00000001'
+Warning[207]: Found label after column 1. (LED_YELLOW)
+  00000002            00024         LED_YELLOW      EQU     B'00000010'
+Warning[207]: Found label after column 1. (LED_GREEN)
+  00000004            00025         LED_GREEN       EQU     B'00000100'
+Warning[207]: Found label after column 1. (LED_BLUE)
+  00000008            00026         LED_BLUE        EQU     B'00001000'
+                      00027         
                       00028         
-000C                  00029 RotinaInicializacao:
-000C   1303           00030         bcf     STATUS, RP1
-000D   1283           00031         bcf     STATUS, RP0 ; change to bank0
-000E   300F           00032         movlw   0x0F                    
-000F   0085           00033         movwf   PORTA           ; set pins RA0-RA3
-0010   202B           00034         call    Delay_1s        ; call delay function                   
-0011   01A0           00035         clrf    led_cnt         ; led_cnt = 0
-                      00036         
-0012                  00037 LedCountLoop:
-0012   0185           00038         clrf    PORTA           ; clear pins RA0-RA3
-0013   3000           00039         movlw   .0
-0014   0220           00040         subwf   led_cnt, W
-0015   1903           00041         btfsc   STATUS, Z       ; led_cnt=0?
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  2
+0000                  00029         org             0x00    ; Vetor de reset
+0000   2815           00030         goto            Start
+                      00031         
+0004                  00032         org             0x04    ;Vetor de interrupção
+0004   00A3           00033         movwf           _wreg
+0005   0E03           00034         swapf           STATUS, W
+0006   00A4           00035         movwf           _status
+0007   190B           00036         btfsc           INTCON, T0IF    ; T0I == 1 ?
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0016   1405           00042         bsf     PORTA, RA0      ; yes
-                      00043         
-0017   3001           00044         movlw   .1
-0018   0220           00045         subwf   led_cnt, W
-0019   1903           00046         btfsc   STATUS, Z       ; led_cnt=1?
-001A   1485           00047         bsf     PORTA, RA1      ; yes
-                      00048                                         
-001B   3002           00049         movlw   .2
-001C   0220           00050         subwf   led_cnt, W
-001D   1903           00051         btfsc   STATUS, Z       ; led_cnt=1?
-001E   1505           00052         bsf     PORTA, RA2      ; yes
-                      00053         
-001F   3003           00054         movlw   .3
-0020   0220           00055         subwf   led_cnt, W
-0021   1903           00056         btfsc   STATUS, Z       ; led_cnt=1?
-0022   1585           00057         bsf     PORTA, RA3      ; yes
-                      00058         
-0023   2037           00059         call    Delay_200ms                                                             
-0024   0AA0           00060         incf    led_cnt, F      ; incrementa led_cnt
-                      00061         
-0025   3004           00062         movlw   .4
-0026   0220           00063         subwf   led_cnt, W      
-0027   1D03           00064         btfss   STATUS, Z       ; led_cnt=4?
-0028   2812           00065         goto    LedCountLoop            ; no
-0029   0185           00066         clrf    PORTA           ; yes
-002A   0008           00067         return
-                      00068         
-002B                  00069 Delay_1s:
-002B   2037           00070         call    Delay_200ms
-002C   2037           00071         call    Delay_200ms
-002D   2037           00072         call    Delay_200ms
-002E   2037           00073         call    Delay_200ms
-002F   2037           00074         call    Delay_200ms
-0030   0008           00075         return
-                      00076         
-0031                  00077 Delay_1ms:
-0031   30F8           00078         movlw   .248
-0032   00A1           00079         movwf   cnt_1
-0033                  00080 Delay1:
-0033   0000           00081         nop
-0034   0BA1           00082         decfsz  cnt_1, F        ;decrement cnt_1
-0035   2833           00083         goto    Delay1
-0036   0008           00084         return                          ; cnt equals 0
-                      00085 
-0037                  00086 Delay_200ms:
-0037   30C8           00087         movlw   .200
-0038   00A2           00088         movwf   cnt_2
-0039                  00089 Delay2:
-0039   2031           00090         call    Delay_1ms
-003A   0BA2           00091         decfsz  cnt_2, F
-003B   2839           00092         goto    Delay2  
-003C   0008           00093         return
-                      00094         
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  3
+0008   280A           00037         goto            Timer0Interrupt ; Yes   
+0009   2810           00038         goto            ExitInterrupt   ; No
+                      00039         
+                      00040 
+000A                  00041 Timer0Interrupt:
+                      00042         
+000A   110B           00043         bcf             INTCON, T0IF
+000B   0AA5           00044         incf            timer_counter_5s, F
+000C   0AA6           00045         incf            timer_counter_50ms, F
+000D   303D           00046         movlw           TMR0_50ms
+000E   0081           00047         movwf           TMR0                    ; Reseta contador TMR0
+000F   2810           00048         goto            ExitInterrupt
+                      00049 
+0010                  00050 ExitInterrupt:
+0010   0E24           00051         swapf           _status, W
+0011   0083           00052         movwf           STATUS
+0012   0EA3           00053         swapf           _wreg, F
+0013   0E23           00054         swapf           _wreg, W        
+0014   0009           00055         retfie
+                      00056         
+0015                  00057 Start:
+                      00058         ;----- I/O config ------
+0015   01A5           00059         clrf    timer_counter_5s
+0016   01A6           00060         clrf    timer_counter_50ms
+0017   1683           00061         bsf     STATUS, RP0     ; change to bank1
+0018   30F0           00062         movlw B'11110000'
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0019   0085           00063         movwf TRISA             ; config RA0-R3 as ouput
+                      00064                                 ; and RA4-RA7 as input
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001A   1006           00065         bcf     TRISB, TRISB0                   
+001B   1703           00066         bsf     STATUS, RP1     ; change to bank3
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001C   0188           00067         clrf    ANSEL           ; configure all PORTA,
+                      00068                                 ; pins as digital I/O
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001D   0189           00069         clrf    ANSELH                                          
+                      00070         ;----- TMR0 configuração ------
+                      00071         ;INTCON; TMR0; OPTION_REG
+                      00072         ;OPTIN_REG: 
+                      00073         ;T0CS= 0(INTOSC/4)
+                      00074         ;PSA= 0 (Prescaler TMR0) 
+                      00075         ;PS=111
+001E   1303           00076         bcf     STATUS,RP1              ; Muda para o BANK01
+                      00077         ;--- MASCARA PARA SETAR ---
+001F   3007           00078         movlw   B'00000111'
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0020   0481           00079         iorwf   OPTION_REG, F   ; Setado o PSA<2:0>
+                      00080         ;--- MASCARA PARA RESETAR ---
+0021   30D7           00081         movlw   B'11010111'     
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0022   0581           00082         andwf   OPTION_REG, F   ; Limpa T0CS, PSA
+0023   1283           00083         bcf     STATUS,RP0              ; Muda para o BANK00
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00095         end
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  4
+0024   303D           00084         movlw .61
+0025   0081           00085         movwf   TMR0
+0026   110B           00086         bcf     INTCON, T0IF    ; Limpa a flag de interrupção
+0027   168B           00087         bsf     INTCON, T0IE    ; Habilita o TMR0 enterrupção
+0028   178B           00088         bsf     INTCON, GIE             ; Habilita interrupção
+0029   203D           00089         call    RotinaInicializacao
+                      00090         
+                      00091                 
+002A                  00092 Main:
+                      00093         
+002A   1806           00094         btfsc   button          ; Botão Start foi pressionado ?
+002B   282A           00095         goto    Main
+002C   0801           00096         movf    TMR0, W
+002D   00A9           00097         movwf   move                    ; Copia TMR0 para move
+002E   01A8           00098         clrf    sequency                ; Sequência = 0
+002F   1886           00099         btfsc   PORTB,RB1               ; Seletor de nível
+0030   2832           00100         goto LevelEasy
+0031   2834           00101         goto LevelHard
+                      00102 
+0032                  00103 LevelEasy:
+0032   1027           00104         bcf     level, 0
+0033   2836           00105         goto    Main_Loop       
+0034                  00106 LevelHard:
+0034   1427           00107         bsf     level, 0
+0035   2836           00108         goto    Main_Loop
+                      00109 
+0036                  00110 Main_Loop:
+0036   2037           00111         call    SorteiaNumero           
+                      00112 ; ----
+                      00113 ;Recebe move
+0037                  00114 SorteiaNumero:
+                      00115 
+0037   3003           00116         movlw   0x03
+Message[305]: Using default destination of 1 (file).
+0038   05A9           00117         andwf   move    ; Limpa bits <7:2>
+                      00118         
+0039   3000           00119         movlw   .0
+003A   0229           00120         subwf   move, W
+003B   1903           00121         btfsc   STATUS, Z
+003C   3401           00122         retlw   B'00000001'
+                      00123         
+                      00124         
+                      00125         
+                      00126         
+003D                  00127 RotinaInicializacao:
+003D   1303           00128         bcf     STATUS, RP1
+003E   1283           00129         bcf     STATUS, RP0 ; change to bank0
+003F   300F           00130         movlw   0x0F                    
+0040   0085           00131         movwf   PORTA           ; set pins RA0-RA3
+0041   2060           00132         call    Delay_1s        ; call delay function                   
+0042   01A0           00133         clrf    led_cnt         ; led_cnt = 0
+                      00134         
+0043                  00135 LedCountLoop:
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0043   0185           00136         clrf    PORTA           ; clear pins RA0-RA3
+                      00137         
+0044   3000           00138         movlw   .0
+0045   0220           00139         subwf   led_cnt, W
+0046   1903           00140         btfsc   STATUS, Z       ; led_cnt=0?
+0047   1405           00141         bsf     PORTA, RA0      ; yes
+0048   3401           00142         retlw   LED_RED
+                      00143         
+0049   3001           00144         movlw   .1
+004A   0220           00145         subwf   led_cnt, W
+004B   1903           00146         btfsc   STATUS, Z       ; led_cnt=1?
+004C   1485           00147         bsf     PORTA, RA1      ; yes
+004D   3402           00148         retlw   LED_YELLOW
+                      00149                                         
+004E   3002           00150         movlw   .2
+004F   0220           00151         subwf   led_cnt, W
+0050   1903           00152         btfsc   STATUS, Z       ; led_cnt=1?
+0051   1505           00153         bsf     PORTA, RA2      ; yes
+0052   3404           00154         retlw   LED_GREEN
+                      00155         
+0053   3003           00156         movlw   .3
+0054   0220           00157         subwf   led_cnt, W
+0055   1903           00158         btfsc   STATUS, Z       ; led_cnt=1?
+0056   1585           00159         bsf     PORTA, RA3      ; yes
+0057   3408           00160         retlw   LED_BLUE
+                      00161         
+0058   206C           00162         call    Delay_200ms                                                             
+0059   0AA0           00163         incf    led_cnt, F      ; incrementa led_cnt
+                      00164         
+                      00165         
+005A   3004           00166         movlw   .4
+005B   0220           00167         subwf   led_cnt, W      
+005C   1D03           00168         btfss   STATUS, Z       ; led_cnt=4?
+005D   2843           00169         goto    LedCountLoop            ; no
+005E   0185           00170         clrf    PORTA           ; yes
+005F   0008           00171         return
+                      00172         
+0060                  00173 Delay_1s:
+0060   206C           00174         call    Delay_200ms
+0061   206C           00175         call    Delay_200ms
+0062   206C           00176         call    Delay_200ms
+0063   206C           00177         call    Delay_200ms
+0064   206C           00178         call    Delay_200ms
+0065   0008           00179         return
+                      00180         
+0066                  00181 Delay_1ms:
+0066   30F8           00182         movlw   .248
+0067   00A1           00183         movwf   cnt_1
+0068                  00184 Delay1:
+0068   0000           00185         nop
+0069   0BA1           00186         decfsz  cnt_1, F        ;decrement cnt_1
+006A   2868           00187         goto    Delay1
+006B   0008           00188         return                          ; cnt equals 0
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00189 
+006C                  00190 Delay_200ms:
+006C   30C8           00191         movlw   .200
+006D   00A2           00192         movwf   cnt_2
+006E                  00193 Delay2:
+006E   2066           00194         call    Delay_1ms
+006F   0BA2           00195         decfsz  cnt_2, F
+0070   286E           00196         goto    Delay2  
+0071   0008           00197         return
+                      00198         
+                      00199         end
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  6
 
 
 SYMBOL TABLE
@@ -182,7 +310,7 @@ BRG6                              00000006
 BRG7                              00000007
 BRG8                              00000000
 BRG9                              00000001
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  5
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  7
 
 
 SYMBOL TABLE
@@ -241,7 +369,7 @@ CHS0                              00000002
 CHS1                              00000003
 CHS2                              00000004
 CHS3                              00000005
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  6
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  8
 
 
 SYMBOL TABLE
@@ -263,11 +391,11 @@ DC2B0                             00000004
 DC2B1                             00000005
 D_A                               00000005
 D_NOT_A                           00000005
-Delay1                            00000033
-Delay2                            00000039
-Delay_1ms                         00000031
-Delay_1s                          0000002B
-Delay_200ms                       00000037
+Delay1                            00000068
+Delay2                            0000006E
+Delay_1ms                         00000066
+Delay_1s                          00000060
+Delay_200ms                       0000006C
 ECCPAS                            0000009C
 ECCPAS0                           00000004
 ECCPAS1                           00000005
@@ -283,6 +411,7 @@ EEDATH                            0000010E
 EEIE                              00000004
 EEIF                              00000004
 EEPGD                             00000007
+ExitInterrupt                     00000010
 F                                 00000001
 FERR                              00000002
 FSR                               00000004
@@ -299,13 +428,13 @@ I2C_START                         00000003
 I2C_STOP                          00000004
 INDF                              00000000
 INTCON                            0000000B
-INTE                              00000004
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  7
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+INTE                              00000004
 INTEDG                            00000006
 INTF                              00000001
 IOCB                              00000096
@@ -321,8 +450,14 @@ IRCF0                             00000004
 IRCF1                             00000005
 IRCF2                             00000006
 IRP                               00000007
+LED_BLUE                          00000008
+LED_GREEN                         00000004
+LED_RED                           00000001
+LED_YELLOW                        00000002
 LTS                               00000001
-LedCountLoop                      00000012
+LedCountLoop                      00000043
+LevelEasy                         00000032
+LevelHard                         00000034
 MC1OUT                            00000007
 MC2OUT                            00000006
 MSK                               00000093
@@ -334,7 +469,8 @@ MSK4                              00000004
 MSK5                              00000005
 MSK6                              00000006
 MSK7                              00000007
-Main                              0000000A
+Main                              0000002A
+Main_Loop                         00000036
 NOT_A                             00000005
 NOT_ADDRESS                       00000005
 NOT_BO                            00000000
@@ -351,6 +487,12 @@ NOT_W                             00000002
 NOT_WRITE                         00000002
 OERR                              00000001
 OPTION_REG                        00000081
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 OSCCON                            0000008F
 OSCTUNE                           00000090
 OSFIE                             00000007
@@ -359,12 +501,6 @@ OSTS                              00000003
 P                                 00000004
 P1M0                              00000006
 P1M1                              00000007
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  8
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 PCL                               00000002
 PCLATH                            0000000A
 PCON                              0000008E
@@ -410,6 +546,12 @@ RA5                               00000005
 RA6                               00000006
 RA7                               00000007
 RB0                               00000000
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 RB1                               00000001
 RB2                               00000002
 RB3                               00000003
@@ -418,12 +560,6 @@ RB5                               00000005
 RB6                               00000006
 RB7                               00000007
 RBIE                              00000003
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE  9
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 RBIF                              00000000
 RC0                               00000000
 RC1                               00000001
@@ -463,12 +599,18 @@ RX9                               00000006
 RX9D                              00000000
 R_NOT_W                           00000002
 R_W                               00000002
-RotinaInicializacao               0000000C
+RotinaInicializacao               0000003D
 S                                 00000003
 SBOREN                            00000004
 SCKP                              00000004
 SCS                               00000000
 SEN                               00000000
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 SENDB                             00000003
 SMP                               00000007
 SPBRG                             00000099
@@ -477,12 +619,6 @@ SPEN                              00000007
 SR0                               00000006
 SR1                               00000007
 SRCON                             00000185
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE 10
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 SREN                              00000005
 SSPADD                            00000093
 SSPBUF                            00000013
@@ -506,7 +642,8 @@ STRD                              00000003
 STRSYNC                           00000004
 SWDTEN                            00000000
 SYNC                              00000004
-Start                             00000005
+SorteiaNumero                     00000037
+Start                             00000015
 T0CS                              00000005
 T0IE                              00000005
 T0IF                              00000002
@@ -526,6 +663,13 @@ T2CON                             00000012
 TMR0                              00000001
 TMR0IE                            00000005
 TMR0IF                            00000002
+TMR0_50ms                         0000003D
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 TMR1                              0000000E
 TMR1CS                            00000001
 TMR1GE                            00000006
@@ -536,12 +680,6 @@ TMR1L                             0000000E
 TMR1ON                            00000000
 TMR2                              00000011
 TMR2IE                            00000001
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE 11
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 TMR2IF                            00000001
 TMR2ON                            00000002
 TOUTPS0                           00000003
@@ -585,6 +723,12 @@ TRISD5                            00000005
 TRISD6                            00000006
 TRISD7                            00000007
 TRISE                             00000089
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 14
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 TRISE0                            00000000
 TRISE1                            00000001
 TRISE2                            00000002
@@ -595,12 +739,6 @@ TUN1                              00000001
 TUN2                              00000002
 TUN3                              00000003
 TUN4                              00000004
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE 12
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 TX8_9                             00000006
 TX9                               00000006
 TX9D                              00000000
@@ -610,6 +748,7 @@ TXIE                              00000004
 TXIF                              00000004
 TXREG                             00000019
 TXSTA                             00000098
+Timer0Interrupt                   0000000A
 UA                                00000001
 ULPWUE                            00000005
 ULPWUIE                           00000002
@@ -643,6 +782,12 @@ WPUB6                             00000006
 WPUB7                             00000007
 WR                                00000001
 WREN                              00000002
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 15
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 WRERR                             00000003
 WUE                               00000001
 Z                                 00000002
@@ -654,12 +799,6 @@ _BOREN_NSLEEP                     00003EFF
 _BOREN_OFF                        00003CFF
 _BOREN_ON                         00003FFF
 _BOREN_SBODEN                     00003DFF
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE 13
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 _BOR_NSLEEP                       00003EFF
 _BOR_OFF                          00003CFF
 _BOR_ON                           00003FFF
@@ -702,6 +841,12 @@ _INTRC_OSC_NOCLKOUT               00003FFC
 _LP_OSC                           00003FF8
 _LVP_OFF                          00002FFF
 _LVP_ON                           00003FFF
+MPASM  5.51                          MAIN.ASM   2-10-2020  11:56:27         PAGE 16
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 _MCLRE_OFF                        00003FDF
 _MCLRE_ON                         00003FFF
 _PWRTE_OFF                        00003FFF
@@ -713,33 +858,37 @@ _WDT_ON                           00003FFF
 _WRT_1FOURTH                      00003BFF
 _WRT_256                          00003DFF
 _WRT_HALF                         000039FF
-MPASM  5.51                          MAIN.ASM   2-7-2020  9:43:23         PAGE 14
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 _WRT_OFF                          00003FFF
 _XT_OSC                           00003FF9
 __16F887                          00000001
 __DEBUG                           1
+_status                           00000024
+_wreg                             00000023
+button                            PORTB, RB0
 cnt_1                             00000021
 cnt_2                             00000022
 led_cnt                           00000020
+level                             00000027
+move                              00000029
+sequency                          00000028
+timer_counter_50ms                00000026
+timer_counter_5s                  00000025
 
 
 MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
 
-0000 : X---XXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXX---
+0000 : X---XXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XX--------------
+2000 : -------XX------- ---------------- ---------------- ----------------
 
 All other memory blocks unused.
 
-Program Memory Words Used:    58
-Program Memory Words Free:  8134
+Program Memory Words Used:   111
+Program Memory Words Free:  8081
 
 
 Errors   :     0
-Warnings :     1 reported,     0 suppressed
-Messages :     2 reported,     0 suppressed
+Warnings :     8 reported,     0 suppressed
+Messages :     7 reported,     0 suppressed
 
 
