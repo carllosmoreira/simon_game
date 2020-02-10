@@ -1,92 +1,96 @@
-#include<p16f887.inc>
+#include <p16f887.inc>
 list p=16f887
 
-;--- Criação de diretivas ---
-
-	cblock 0x20 		; endereço de memória livre, registradores de uso geral
-	led_cnt 			; led_cnt é igual a 0x20. Dando um nome, a um endereço
+	cblock 0x20
+		led_cnt
+		cnt_1
+		cnt_2
 	endc
 
-;--- ----
-	org		0x00 		; Vetor de reset
-	goto		Start 	; Salto para endereço de memória de programa
+	org		0x00	; reset vector
+	goto 	Start
 	
-	org 		0x04 		; Tratamento de interrupção, vetor de interrupção
-	retfie			; Sai da interrupção 
+	org		0x04	;interrupt vector
+	retfie
 	
-;--- ----
 Start:
-
-	;--- Configuração de I/O (Entrada/Saída) ----
- 	
- 	;1111 0000 F0
- 	bsf		STATUS,RP0		; Muda para o bank1 01
- 	movlw		B'11110000'
- 	movwf		TRISA			; TRISA = B'11110000'(RA0,RA1,RA2,RA3 como saída)
- 	
- 	bsf		STATUS,RP1		; Mudar para o bank3 11
- 	clrf		ANSEL			; Configura os pinos da PORTA 
- 						; como entrada digital
- 	
-;--- ----
+	;----- I/O config ------
+	bsf 	STATUS, RP0	; change to bank1
+	movlw 	B'11110000'
+	movwf 	TRISA		; config RA0-R3 as ouput
+						; and RA4-RA7 as input
+	bsf 	STATUS, RP1	; change to bank3
+	clrf	ANSEL		; configure all PORTA,
+						; pins as digital I/O
 Main:
-	call		Rotinainicializacao
-	goto		Main
+	call	RotinaInicializacao
+	goto 	Main
 	
-;--- ----	
-Rotinainicializacao:
+RotinaInicializacao:
+	bcf 	STATUS, RP1
+	bcf 	STATUS, RP0 ; change to bank0
+	movlw 	0x0F			
+	movwf 	PORTA		; set pins RA0-RA3
+	call	Delay_1s	; call delay function			
+	clrf 	led_cnt		; led_cnt = 0
 	
-	bcf		STATUS,RP0		; Muda para o bank2 10
-	bcf		STATUS,RP1		; Muda para o bank0 00
-	movlw		0x0F			; W = B'0000 1111 '
-	movwf		PORTA			; LEDs iniciam ligados		
-	call		Delay_1s		; Chama a função de delay
-	clrf		led_cnt		; led_cnt == 0
-
-
-;--- ----
-LedContLoop:
-
-	clrf		PORTA			; Limpa todos os pinos RA0-RA3
-	movlw		.0
-	subwf		led_cnt, W		
-	btfsc		STATUS, Z		; led_cnt =0 ?
-	bsf		PORTA, RA0		; Sim, led_cnt ==0 ; Acende LED0-RA0
+LedCountLoop:
+	clrf	PORTA		; clear pins RA0-RA3
+	movlw 	.0
+	subwf 	led_cnt, W
+	btfsc	STATUS, Z	; led_cnt=0?
+	bsf 	PORTA, RA0	; yes
 	
-	movlw		.1
-	subwf		led_cnt, W		
-	btfsc		STATUS, Z		; led_cnt =1 ?
-	bsf		PORTA, RA1		; Sim, led_cnt ==1 ; Acende LED2-RA1
+	movlw 	.1
+	subwf 	led_cnt, W
+	btfsc	STATUS, Z	; led_cnt=1?
+	bsf 	PORTA, RA1	; yes
+					
+	movlw 	.2
+	subwf 	led_cnt, W
+	btfsc	STATUS, Z	; led_cnt=1?
+	bsf 	PORTA, RA2	; yes
 	
-	movlw		.2
-	subwf		led_cnt, W		
-	btfsc		STATUS, Z		; led_cnt =2 ?
-	bsf		PORTA, RA2		; Sim, led_cnt ==2 ; Acende LED2-RA2
+	movlw 	.3
+	subwf 	led_cnt, W
+	btfsc	STATUS, Z	; led_cnt=1?
+	bsf 	PORTA, RA3	; yes
 	
-	movlw		.3
-	subwf		led_cnt, W		
-	btfsc		STATUS, Z		; led_cnt =3 ?
-	bsf		PORTA, RA3		; Sim, led_cnt ==3 ; Acende LED3-RA3
+	call 	Delay_200ms								
+	incf	led_cnt, F 	; incrementa led_cnt
 	
-	call		Delay_200ms
-	incf		led_cnt, F		; Incrementa led_cnt
-	
-	movlw		.4
-	subwf		led_cnt, W		
-	btfss		STATUS, Z		; led_cnt = 4 ?
-	goto		LedContLoop	; Não, volta ao inicio da rotina
-	clrf		PORTA			; Sim, apaga todos os LEDs
+	movlw	.4
+	subwf	led_cnt, W	
+	btfss 	STATUS, Z 	; led_cnt=4?
+	goto	LedCountLoop		; no
+	clrf	PORTA		; yes
 	return
 	
 Delay_1s:
-
-	nop
+	call	Delay_200ms
+	call	Delay_200ms
+	call	Delay_200ms
+	call	Delay_200ms
+	call	Delay_200ms
 	return
 	
+Delay_1ms:
+	movlw	.248
+	movwf	cnt_1
+Delay1:
+	nop
+	decfsz	cnt_1, F	;decrement cnt_1
+	goto 	Delay1
+	return				; cnt equals 0
+
 Delay_200ms:
-
-	nop
+	movlw 	.200
+	movwf	cnt_2
+Delay2:
+	call	Delay_1ms
+	decfsz	cnt_2, F
+	goto	Delay2	
 	return
 	
+	end
 	
-end	

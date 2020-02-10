@@ -18,6 +18,35 @@ Se o usuário errar algum movimento, ou levar tempo superior a 5 segundos para r
 
 Se o usuário conseguir realizar uma sequencia de 32 movimentos, será executada a **rotina de vitória**, indicando que o jogo terminou. Para iniciar o jogo novamente o usuário deverá apertar o botão start.
 
+Abaixo é apresentado o fluxograma geral do software.
+
+![Simon Game](./diagramas/simon_game.png)
+
+### Rotina de inicialização
+
+![Sequencia de inicialização](./diagramas/simon_game_rotina_inicializacao.png)
+
+### Sorteia movimento
+
+![Sequencia de inicialização](./diagramas/simon_game_sorteia_movimento.png)
+
+
+### Exibição da sequência de movimentos
+
+![Exibe movimentos](./diagramas/simon_game_exibe_sequencia_de_movimentos.png)
+
+### Exibição de um movimento
+
+![Movimento](./diagramas/simon_game_exibe_movimento.png)
+
+### Entrada de movimentos
+
+![Entrada de movimentos](./diagramas/simon_game_entrada_de_movimentos.png)
+
+### Rotina de erro
+
+### Rotina de vitória
+
 ### Frequências sonoras 
 
 Deverá ser emitido um som de acordo com a cor do LED aceso em cada movimento, como mostrado a seguir:
@@ -29,12 +58,3 @@ Deverá ser emitido um som de acordo com a cor do LED aceso em cada movimento, c
 * Red: 310hz
 
 * Green: 415Hz
-
-### Rotina de inicialização
-
-A sequência de inicialização pode ser representada pelo fluxograma exibido abaixo.
-![Sequencia de inicialização](diagramas/simon_game_sequencia_inicializacao.png)
-
-### Rotina de erro
-
-### Rotina de vitória
