@@ -3,6 +3,9 @@
 list p=16f887
 __CONFIG _CONFIG1, 0x2FF4
 __CONFIG _CONFIG2, 0x3FFF
+
+
+
 	cblock 0x20
 		led_cnt
 		cnt_1
@@ -16,53 +19,70 @@ __CONFIG _CONFIG2, 0x3FFF
 			; 1 = Facil
 		sequency
 		move
+		last_move
+		last_input
+		timeout	;
+			;
+		current_move
 		
 	endc
 	
-	TMR0_50ms	EQU	.61		; Constante Literal
+	HARD_TIMEOUT	EQU	.3
+	EASY_TIMEOUT	EQU	.5
+	MOVE_BASE_ADDR EQU 	0x05F
+	TMR0_50MS	EQU	.61		; Constante Literal
 	LED_RED	EQU	B'00000001'
 	LED_YELLOW	EQU	B'00000010'
 	LED_GREEN	EQU	B'00000100'
 	LED_BLUE	EQU	B'00001000'
 	
 	
-	org		0x00	; Vetor de reset
-	goto 		Start
+	org	0x00		; Vetor de reset
+	goto 	Start
 	
-	org		0x04	;Vetor de interrupção
-	movwf		_wreg
-	swapf		STATUS, W
-	movwf		_status
-	btfsc		INTCON, T0IF	; T0I == 1 ?
-	goto		Timer0Interrupt	; Yes	
-	goto		ExitInterrupt	; No
+	org	0x04		;Vetor de interrupção
+	movwf	_wreg
+	swapf	STATUS, W
+	movwf	_status
+	clrf	STATUS
+	btfsc	INTCON, T0IF		; T0IF == 1 ?
+	goto	Timer0Interrupt	; Yes	
+	goto	ExitInterrupt	; No
 	
 
 Timer0Interrupt:
 	
-	bcf		INTCON, T0IF
-	incf		timer_counter_5s, F
-	incf		timer_counter_50ms, F
-	movlw		TMR0_50ms
-	movwf		TMR0			; Reseta contador TMR0
-	goto		ExitInterrupt
+	bcf	INTCON, T0IF
+	incf	timer_counter_5s, F
+	incf	timer_counter_50ms, F
+	movlw	TMR0_50MS
+	movwf	TMR0			; Reseta contador TMR0
+	goto	ExitInterrupt
 
 ExitInterrupt:
-	swapf		_status, W
-	movwf		STATUS
-	swapf		_wreg, F
-	swapf		_wreg, W	
+	swapf	_status, W
+	movwf	STATUS
+	swapf	_wreg, F
+	swapf	_wreg, W	
 	retfie
 	
-Start:
+Start:	
+	;----- TESTE ------
+	movlw	.2
+	sublw	.1
+	
+	
+	
+	
 	;----- I/O config ------
 	clrf	timer_counter_5s
 	clrf	timer_counter_50ms
 	bsf 	STATUS, RP0	; change to bank1
-	movlw B'11110000'
-	movwf TRISA		; config RA0-R3 as ouput
+	movlw	 B'11110000'
+	movwf 	TRISA		; config RA0-R3 as ouput
 				; and RA4-RA7 as input
-	bcf	TRISB, TRISB0			
+	bcf	TRISB, TRISB0		
+	bcf	TRISB, TRISB1	
 	bsf 	STATUS, RP1	; change to bank3
 	clrf	ANSEL		; configure all PORTA,
 				; pins as digital I/O
@@ -76,29 +96,34 @@ Start:
 	bcf	STATUS,RP1		; Muda para o BANK01
 	;--- MASCARA PARA SETAR ---
 	movlw	B'00000111'
-	iorwf	OPTION_REG, F	; Setado o PSA<2:0>
+	iorwf	OPTION_REG, F		; Setado o PSA<2:0>
 	;--- MASCARA PARA RESETAR ---
 	movlw	B'11010111'	
-	andwf	OPTION_REG, F	; Limpa T0CS, PSA
+	andwf	OPTION_REG, F		; Limpa T0CS, PSA
 	bcf	STATUS,RP0		; Muda para o BANK00
-	movlw .61
+	movlw 	.61
 	movwf	TMR0
-	bcf	INTCON, T0IF	; Limpa a flag de interrupção
-	bsf	INTCON, T0IE	; Habilita o TMR0 enterrupção
+	bcf	INTCON, T0IF		; Limpa a flag de interrupção
+	bsf	INTCON, T0IE		; Habilita o TMR0 enterrupção
 	bsf	INTCON, GIE		; Habilita interrupção
 	call	RotinaInicializacao
-	
+	movlw	MOVE_BASE_ADDR
+	movwf	FSR
+	bcf	STATUS, IRP
+	clrf	last_move
 		
 Main:
 	
 	btfsc	button		; Botão Start foi pressionado ?
 	goto	Main
+	
+
 	movf	TMR0, W
 	movwf	move			; Copia TMR0 para move
 	clrf	sequency		; Sequência = 0
 	btfsc	PORTB,RB1		; Seletor de nível
-	goto LevelEasy
-	goto LevelHard
+	goto 	LevelEasy
+	goto 	LevelHard
 
 LevelEasy:
 	bcf	level, 0
@@ -108,7 +133,9 @@ LevelHard:
 	goto	Main_Loop
 
 Main_Loop:
-	call	SorteiaNumero		
+	call	SorteiaNumero
+	call	StoreNumber
+	goto	Main		
 ; ----
 ;Recebe move
 SorteiaNumero:
@@ -119,45 +146,119 @@ SorteiaNumero:
 	movlw	.0
 	subwf	move, W
 	btfsc	STATUS, Z
-	retlw	B'00000001'
+	retlw	LED_RED
+	
+	movlw 	.1
+	subwf	move, W
+	btfsc	STATUS, Z
+	retlw	LED_YELLOW
+	
+	movlw 	.2
+	subwf	move, W
+	btfsc	STATUS, Z
+	retlw	LED_GREEN
+	
+	movlw 	.3
+	subwf	move, W
+	btfsc	STATUS, Z
+	retlw	LED_BLUE
 	
 	
-	
-	
-RotinaInicializacao:
+StoreNumber:
+
+	movwf	INDF
+	incf	FSR, F
+	incf	last_move, F
+	return
+
+EntradaMovimento:
+
 	bcf 	STATUS, RP1
-	bcf 	STATUS, RP0 ; change to bank0
+	bcf	STATUS, RP0	; Muda para o Banco 0
+	clrf	last_input
+	movlw	MOVE_BASE_ADDR
+	movwf	FSR 
+	
+InputLoop:
+	
+	movf	PORTD, W
+	andlw	0x0F	; Limpa do RD<7:4>
+	sublw	0x00
+	btfsc	STATUS, Z	; Testa entradas
+	goto	ButtonNotPressed
+	goto	ButttonPressed
+			
+			
+ButtonNotPressed:
+	
+	
+	;btfss	timeout	; ocorreu timeout ?
+	goto	InputLoop	; Não
+	return
+	
+ButttonPressed:
+
+	movwf	current_move
+	call 	CompareInput
+	sublw	.0
+	btfsc	STATUS, Z	; Botão correto pressionado ?
+	return		; Não
+	incf	last_input, F	; Sim
+	incf	FSR, F
+	movf	last_input, W
+	subwf	last_move, W
+	btfsc	STATUS, C	; last_input > last_move?
+	return
+	goto	InputLoop
+	
+
+	
+CompareInput:
+	
+
+	movf	current_move
+	subwf	INDF
+	btfss	STATUS, Z
+	retlw	.0
+	retlw	current_move
+
+		
+
+RotinaInicializacao:
+
+	bcf 	STATUS, RP1
+	bcf 	STATUS, RP0 	; change to bank0
 	movlw 	0x0F			
 	movwf 	PORTA		; set pins RA0-RA3
-	call	Delay_1s	; call delay function			
+	call	Delay_1s		; call delay function			
 	clrf 	led_cnt		; led_cnt = 0
 	
 LedCountLoop:
 	clrf	PORTA		; clear pins RA0-RA3
 	
 	movlw 	.0
-	subwf 	led_cnt, W
+	subwf	led_cnt, W
 	btfsc	STATUS, Z	; led_cnt=0?
 	bsf 	PORTA, RA0	; yes
-	retlw	LED_RED
+	
 	
 	movlw 	.1
 	subwf 	led_cnt, W
 	btfsc	STATUS, Z	; led_cnt=1?
 	bsf 	PORTA, RA1	; yes
-	retlw	LED_YELLOW
+	
 					
 	movlw 	.2
 	subwf 	led_cnt, W
 	btfsc	STATUS, Z	; led_cnt=1?
 	bsf 	PORTA, RA2	; yes
-	retlw	LED_GREEN
+	
 	
 	movlw 	.3
 	subwf 	led_cnt, W
 	btfsc	STATUS, Z	; led_cnt=1?
 	bsf 	PORTA, RA3	; yes
-	retlw	LED_BLUE
+	
 	
 	call 	Delay_200ms								
 	incf	led_cnt, F 	; incrementa led_cnt
